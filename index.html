@@ -3,95 +3,71 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Robot CND Đồng Văn - Siêu Tốc</title>
+    <title>Chẩn Đoán Robot CND</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #010409; color: #e6edf3; padding: 20px; margin: 0; }
-        .robot-box { max-width: 480px; margin: auto; padding: 30px; background: #0d1117; border-radius: 40px; border: 3px solid #30363d; box-shadow: 0 30px 60px rgba(0,0,0,0.8); }
-        .ai-pulse { width: 160px; height: 160px; border-radius: 50%; background: #161b22; margin: 25px auto; display: flex; align-items: center; justify-content: center; border: 8px solid #30363d; transition: 0.3s; font-size: 60px; }
-        .listening { border-color: #238636; box-shadow: 0 0 40px #238636; animation: breath 1s infinite; }
-        .speaking { border-color: #1f6feb; box-shadow: 0 0 40px #1f6feb; }
-        @keyframes breath { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
-        #startBtn { padding: 20px 40px; border-radius: 50px; border: none; background: #238636; color: white; font-weight: bold; cursor: pointer; font-size: 22px; box-shadow: 0 10px 20px rgba(35, 134, 54, 0.3); }
-        #chatLog { margin-top: 30px; background: rgba(0,0,0,0.5); height: 180px; overflow-y: auto; border-radius: 20px; padding: 20px; text-align: left; font-size: 15px; line-height: 1.6; border: 1px solid #30363d; }
+        body { font-family: sans-serif; text-align: center; background: #000; color: #fff; padding: 20px; }
+        .error-box { background: #450a0a; border: 2px solid #ef4444; color: #fecaca; padding: 15px; border-radius: 10px; margin: 20px 0; text-align: left; font-family: monospace; font-size: 13px; display: none; }
+        #startBtn { padding: 20px; background: #22c55e; color: white; border: none; border-radius: 10px; font-weight: bold; }
     </style>
 </head>
 <body>
-    <div class="robot-box">
-        <h2 style="color: #58a6ff; text-transform: uppercase;">Nhà Hàng CND Đồng Văn</h2>
-        <div id="aiVisual" class="ai-pulse">🎙️</div>
-        <p id="infoStatus" style="color: #8b949e; font-weight: 500;">Bấm nút để em trực quầy cho anh!</p>
-        <button id="startBtn">KÍCH HOẠT ROBOT</button>
-        <div id="chatLog"></div>
-    </div>
+    <h2>🤖 KIỂM TRA KẾT NỐI CND</h2>
+    <button id="startBtn">BẬT MIC ĐỂ TEST</button>
+    
+    <div id="status" style="margin: 20px; color: #38bdf8;">Đang chờ anh bấm nút...</div>
+    <div id="errorBox" class="error-box"></div>
+    <div id="log" style="text-align: left; padding: 10px; background: #111; height: 100px; overflow: auto; border: 1px solid #333;"></div>
 
     <script>
+        // API KEY CỦA ANH SƠN
         const API_KEY = "AIzaSyCs8gITrFcSUHYe_6KeJnWrcQd0tBdMgwo";
-        const MODEL = "gemini-3.0-flash"; // Bản siêu tốc nhất 2026
-        
-        const SYSTEM_PROMPT = `
-            BẠN LÀ LỄ TÂN NHÀ HÀNG CND ĐỒNG VĂN. Chủ là anh Sơn (Đầu bếp, Phó Chủ tịch Hội Du lịch, Đại biểu HĐND).
-            PHONG CÁCH: Nữ, 18 tuổi, nhí nhảnh, lễ phép (Dạ/Ạ). Trả lời cực ngắn dưới 12 từ.
-            THỰC ĐƠN CND:
-            - Lẩu (Ngựa/Bò/Dê/Gà đen): 600k (2-3 người), 1tr (4-6 người), 1.2tr (7-8 người).
-            - Mẹt đủ món (6-8 người): 1.000.000đ/mẹt.
-            - Món lẻ: Ngựa xào/nướng (250k), Thắng cố ngựa (350k), Gà luộc (600k), Cá tầm nướng (300k).
-            DU LỊCH: Tư vấn Giếng Nước Thần, Hang Tả Lủng, hoa Tam giác mạch. Web: dulichcaonguyenda.com.
-        `;
+        const MODEL = "gemini-1.5-flash"; // Dùng bản Flash để đảm bảo ổn định 100%
 
         const startBtn = document.getElementById('startBtn');
-        const aiVisual = document.getElementById('aiVisual');
-        const infoStatus = document.getElementById('infoStatus');
-        const chatLog = document.getElementById('chatLog');
+        const status = document.getElementById('status');
+        const errorBox = document.getElementById('errorBox');
+        const log = document.getElementById('log');
 
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         const recog = new SpeechRecognition();
         recog.lang = 'vi-VN';
-        const synth = window.speechSynthesis;
-        let active = false;
 
-        function logMsg(role, text) {
-            chatLog.innerHTML = `<div><b>${role}:</b> ${text}</div>` + chatLog.innerHTML;
-        }
-
-        const speak = (text) => {
-            aiVisual.className = "ai-pulse speaking";
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'vi-VN';
-            utterance.pitch = 1.5; 
-            utterance.rate = 1.2;
-            utterance.onend = () => { if(active) recog.start(); };
-            synth.speak(utterance);
-        };
-
-        startBtn.onclick = () => { active = true; startBtn.style.display = 'none'; recog.start(); };
-
-        recog.onstart = () => {
-            aiVisual.className = "ai-pulse listening";
-            infoStatus.innerText = "Em đang nghe đây anh Sơn...";
-            aiVisual.innerText = "🟢";
-        };
+        startBtn.onclick = () => { recog.start(); startBtn.style.display = 'none'; };
 
         recog.onresult = async (event) => {
             const query = event.results[0][0].transcript;
-            logMsg("Khách", query);
-            aiVisual.innerText = "⏳";
+            log.innerHTML = `<div>Anh hỏi: ${query}</div>` + log.innerHTML;
+            status.innerText = "⏳ Đang gửi dữ liệu sang Google...";
+            errorBox.style.display = "none";
 
             try {
                 const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${API_KEY}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contents: [{ parts: [{ text: SYSTEM_PROMPT + " Khách hỏi: " + query }] }] })
+                    body: JSON.stringify({ contents: [{ parts: [{ text: "Bạn là lễ tân CND. Trả lời cực ngắn: " + query }] }] })
                 });
-                const data = await response.json();
-                const reply = data.candidates[0].content.parts[0].text;
-                logMsg("Robot", reply);
-                speak(reply);
-            } catch (e) {
-                if(active) setTimeout(() => recog.start(), 1000);
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    errorBox.style.display = "block";
+                    errorBox.innerText = "LỖI TỪ GOOGLE: " + JSON.stringify(errorData, null, 2);
+                    status.innerText = "❌ Thất bại!";
+                } else {
+                    const data = await response.json();
+                    const reply = data.candidates[0].content.parts[0].text;
+                    log.innerHTML = `<div style="color:#22c55e">Robot: ${reply}</div>` + log.innerHTML;
+                    status.innerText = "✅ Thành công! Hãy nói tiếp.";
+                    const msg = new SpeechSynthesisUtterance(reply);
+                    msg.lang = 'vi-VN';
+                    window.speechSynthesis.speak(msg);
+                }
+            } catch (err) {
+                errorBox.style.display = "block";
+                errorBox.innerText = "LỖI MẠNG: Không thể kết nối tới Google. Kiểm tra Wifi nhà hàng!";
             }
         };
 
-        recog.onend = () => { if(active && !synth.speaking) setTimeout(() => recog.start(), 300); };
+        recog.onend = () => { setTimeout(() => recog.start(), 1000); };
     </script>
 </body>
 </html>
