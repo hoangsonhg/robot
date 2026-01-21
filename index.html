@@ -3,86 +3,95 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Robot CND - Full Menu 2026</title>
+    <title>Robot CND Đồng Văn - Siêu Tốc</title>
     <style>
-        body { font-family: sans-serif; text-align: center; background: #020617; color: #f8fafc; padding: 20px; }
-        .robot-box { max-width: 500px; margin: auto; padding: 30px; background: #0f172a; border-radius: 30px; border: 2px solid #1e293b; box-shadow: 0 25px 60px rgba(0,0,0,0.6); }
-        .status-light { width: 140px; height: 140px; border-radius: 50%; background: #1e293b; margin: 25px auto; display: flex; align-items: center; justify-content: center; border: 6px solid #334155; font-size: 55px; transition: 0.4s; }
-        .listening { border-color: #10b981; box-shadow: 0 0 40px #10b981; }
-        .speaking { border-color: #3b82f6; box-shadow: 0 0 40px #3b82f6; }
-        #startBtn { padding: 20px 40px; border-radius: 50px; border: none; background: #e11d48; color: white; font-weight: bold; cursor: pointer; font-size: 18px; }
-        #chatLog { margin-top: 25px; background: rgba(0,0,0,0.3); height: 180px; overflow-y: auto; border-radius: 15px; padding: 15px; text-align: left; font-size: 14px; border: 1px solid #1e293b; }
+        body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #010409; color: #e6edf3; padding: 20px; margin: 0; }
+        .robot-box { max-width: 480px; margin: auto; padding: 30px; background: #0d1117; border-radius: 40px; border: 3px solid #30363d; box-shadow: 0 30px 60px rgba(0,0,0,0.8); }
+        .ai-pulse { width: 160px; height: 160px; border-radius: 50%; background: #161b22; margin: 25px auto; display: flex; align-items: center; justify-content: center; border: 8px solid #30363d; transition: 0.3s; font-size: 60px; }
+        .listening { border-color: #238636; box-shadow: 0 0 40px #238636; animation: breath 1s infinite; }
+        .speaking { border-color: #1f6feb; box-shadow: 0 0 40px #1f6feb; }
+        @keyframes breath { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+        #startBtn { padding: 20px 40px; border-radius: 50px; border: none; background: #238636; color: white; font-weight: bold; cursor: pointer; font-size: 22px; box-shadow: 0 10px 20px rgba(35, 134, 54, 0.3); }
+        #chatLog { margin-top: 30px; background: rgba(0,0,0,0.5); height: 180px; overflow-y: auto; border-radius: 20px; padding: 20px; text-align: left; font-size: 15px; line-height: 1.6; border: 1px solid #30363d; }
     </style>
 </head>
 <body>
     <div class="robot-box">
-        <h2 style="color: #38bdf8;">NHÀ HÀNG CND ĐỒNG VĂN</h2>
-        <div id="visual" class="status-light">🤖</div>
-        <p id="info">Sẵn sàng phục vụ anh Sơn!</p>
+        <h2 style="color: #58a6ff; text-transform: uppercase;">Nhà Hàng CND Đồng Văn</h2>
+        <div id="aiVisual" class="ai-pulse">🎙️</div>
+        <p id="infoStatus" style="color: #8b949e; font-weight: 500;">Bấm nút để em trực quầy cho anh!</p>
         <button id="startBtn">KÍCH HOẠT ROBOT</button>
         <div id="chatLog"></div>
     </div>
 
     <script>
         const API_KEY = "AIzaSyCs8gITrFcSUHYe_6KeJnWrcQd0tBdMgwo";
-        const MODEL = "gemini-1.5-flash"; // Dùng bản Flash ổn định nhất để tránh lỗi kết nối
-
-        const MENU_CND = `
-        BẠN LÀ LỄ TÂN NHÀ HÀNG CND ĐỒNG VĂN. TRẢ LỜI CỰC NGẮN (<15 TỪ), DẠ/Ạ.
-        THỰC ĐƠN CHI TIẾT:
-        1. THỊT NGỰA/BÒ/DÊ: Ngựa/Bò/Dê nướng/xào (250k), Sách bò (180k), Thắng cố ngựa (350k), Thắng cố bò (150k), Thắng cố dê (230k).
-        2. GÀ & LỢN ĐEN: Gà rang/nướng/om nấm/canh gừng (250k), Gà luộc cả con (600k). Lợn hấp/nướng (200k), Lợn rang (180k), Dạ dày (150k), Tim cật xào (220k).
-        3. CÁ TẦM/LĂNG: Cá tầm xào/nướng/canh chua (300k), Nem cá (200k). Cá lăng xào/nướng/canh chua (250k), Canh đầu cá (150k).
-        4. LẨU (2-3/4-6/7-8 người): Ngựa/Dê (600k/1tr/1.2tr), Bò/Gà đen (500k/800k/1tr), Cá tầm/lăng (600k/900k/1.2tr), Thập cẩm (1tr).
-        5. MẸT ĐỦ MÓN (6-8 người - 1 TRIỆU): Mẹt lợn; Mẹt Dê+Bò+Gà; Mẹt Bò+Gà+Cá; Mẹt Lợn+Gà+Cá; Mẹt Lợn+Bò+Gà; Mẹt Ngựa+Gà+Cá.
-        6. KHÁC: Cá suối (150k), Mèn mén xào trứng/Trứng rán (50k), Khoai tây (40k), Rau/Canh (40k), Cơm (30k). Rượu ngô (40k), Bia (25k-30k).`;
+        const MODEL = "gemini-3.0-flash"; // Bản siêu tốc nhất 2026
+        
+        const SYSTEM_PROMPT = `
+            BẠN LÀ LỄ TÂN NHÀ HÀNG CND ĐỒNG VĂN. Chủ là anh Sơn (Đầu bếp, Phó Chủ tịch Hội Du lịch, Đại biểu HĐND).
+            PHONG CÁCH: Nữ, 18 tuổi, nhí nhảnh, lễ phép (Dạ/Ạ). Trả lời cực ngắn dưới 12 từ.
+            THỰC ĐƠN CND:
+            - Lẩu (Ngựa/Bò/Dê/Gà đen): 600k (2-3 người), 1tr (4-6 người), 1.2tr (7-8 người).
+            - Mẹt đủ món (6-8 người): 1.000.000đ/mẹt.
+            - Món lẻ: Ngựa xào/nướng (250k), Thắng cố ngựa (350k), Gà luộc (600k), Cá tầm nướng (300k).
+            DU LỊCH: Tư vấn Giếng Nước Thần, Hang Tả Lủng, hoa Tam giác mạch. Web: dulichcaonguyenda.com.
+        `;
 
         const startBtn = document.getElementById('startBtn');
-        const visual = document.getElementById('visual');
-        const info = document.getElementById('info');
+        const aiVisual = document.getElementById('aiVisual');
+        const infoStatus = document.getElementById('infoStatus');
         const chatLog = document.getElementById('chatLog');
 
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         const recog = new SpeechRecognition();
         recog.lang = 'vi-VN';
         const synth = window.speechSynthesis;
-        let isRunning = false;
+        let active = false;
+
+        function logMsg(role, text) {
+            chatLog.innerHTML = `<div><b>${role}:</b> ${text}</div>` + chatLog.innerHTML;
+        }
 
         const speak = (text) => {
-            visual.className = "status-light speaking";
+            aiVisual.className = "ai-pulse speaking";
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = 'vi-VN';
-            utterance.pitch = 1.4;
-            utterance.onend = () => { if(isRunning) recog.start(); };
+            utterance.pitch = 1.5; 
+            utterance.rate = 1.2;
+            utterance.onend = () => { if(active) recog.start(); };
             synth.speak(utterance);
         };
 
-        startBtn.onclick = () => { isRunning = true; startBtn.style.display = 'none'; recog.start(); };
+        startBtn.onclick = () => { active = true; startBtn.style.display = 'none'; recog.start(); };
 
-        recog.onstart = () => { visual.className = "status-light listening"; visual.innerText = "🎤"; info.innerText = "Đang nghe ạ..."; };
-        
+        recog.onstart = () => {
+            aiVisual.className = "ai-pulse listening";
+            infoStatus.innerText = "Em đang nghe đây anh Sơn...";
+            aiVisual.innerText = "🟢";
+        };
+
         recog.onresult = async (event) => {
             const query = event.results[0][0].transcript;
-            chatLog.innerHTML = `<div><b>Khách:</b> ${query}</div>` + chatLog.innerHTML;
-            visual.innerText = "⏳";
+            logMsg("Khách", query);
+            aiVisual.innerText = "⏳";
 
             try {
                 const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${API_KEY}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contents: [{ parts: [{ text: MENU_CND + " Khách hỏi: " + query }] }] })
+                    body: JSON.stringify({ contents: [{ parts: [{ text: SYSTEM_PROMPT + " Khách hỏi: " + query }] }] })
                 });
                 const data = await response.json();
                 const reply = data.candidates[0].content.parts[0].text;
-                chatLog.innerHTML = `<div style="color:#38bdf8"><b>Robot:</b> ${reply}</div>` + chatLog.innerHTML;
+                logMsg("Robot", reply);
                 speak(reply);
             } catch (e) {
-                info.innerText = "Lỗi kết nối, đang thử lại...";
-                setTimeout(() => recog.start(), 2000);
+                if(active) setTimeout(() => recog.start(), 1000);
             }
         };
 
-        recog.onend = () => { if(isRunning && !synth.speaking) setTimeout(() => recog.start(), 500); };
+        recog.onend = () => { if(active && !synth.speaking) setTimeout(() => recog.start(), 300); };
     </script>
 </body>
 </html>
