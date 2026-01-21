@@ -3,130 +3,101 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Robot Lễ Tân CND - Full Menu</title>
+    <title>Robot CND - Gemini 3.0 Final</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #020617; color: #f8fafc; padding: 20px; margin: 0; }
         .robot-box { max-width: 500px; margin: auto; padding: 30px; background: #0f172a; border-radius: 30px; border: 2px solid #1e293b; box-shadow: 0 25px 60px rgba(0,0,0,0.6); }
-        .ai-eye { width: 150px; height: 150px; border-radius: 50%; background: #1e293b; margin: 25px auto; display: flex; align-items: center; justify-content: center; border: 6px solid #334155; transition: 0.4s; font-size: 55px; }
-        .listening { border-color: #10b981; box-shadow: 0 0 40px #10b981; animation: wave 1.2s infinite; }
+        .status-light { width: 120px; height: 120px; border-radius: 50%; background: #1e293b; margin: 25px auto; display: flex; align-items: center; justify-content: center; border: 6px solid #334155; font-size: 50px; transition: 0.3s; }
+        .listening { border-color: #10b981; box-shadow: 0 0 40px #10b981; }
         .speaking { border-color: #3b82f6; box-shadow: 0 0 40px #3b82f6; }
-        @keyframes wave { 0% { transform: scale(1); } 50% { transform: scale(1.08); } 100% { transform: scale(1); } }
-        #startBtn { padding: 20px 40px; border-radius: 50px; border: none; background: #e11d48; color: white; font-weight: bold; cursor: pointer; font-size: 20px; margin-top: 10px; box-shadow: 0 4px 15px rgba(225, 29, 72, 0.4); }
-        #chatLog { margin-top: 30px; background: rgba(0,0,0,0.3); height: 200px; overflow-y: auto; border-radius: 15px; padding: 20px; text-align: left; font-size: 15px; color: #cbd5e1; border: 1px solid #1e293b; }
+        #startBtn { padding: 20px 40px; border-radius: 50px; border: none; background: #e11d48; color: white; font-weight: bold; cursor: pointer; font-size: 20px; margin-top: 10px; }
+        #chatLog { margin-top: 30px; background: rgba(0,0,0,0.3); height: 180px; overflow-y: auto; border-radius: 15px; padding: 15px; text-align: left; font-size: 14px; border: 1px solid #1e293b; }
     </style>
 </head>
 <body>
     <div class="robot-box">
-        <h2 style="color: #38bdf8; letter-spacing: 1px; margin-bottom: 10px;">NHÀ HÀNG CND ĐỒNG VĂN</h2>
-        <div id="aiVisual" class="ai-eye">🤖</div>
-        <p id="infoStatus" style="color: #94a3b8; font-weight: 500;">Chế độ tự động đang tắt</p>
-        <button id="startBtn">KÍCH HOẠT NHÂN VIÊN ẢO</button>
+        <h2 style="color: #38bdf8;">🤖 LỄ TÂN CND ĐỒNG VĂN</h2>
+        <div id="aiVisual" class="status-light">🎙️</div>
+        <p id="infoStatus">Hệ thống đang chờ lệnh...</p>
+        <button id="startBtn">KÍCH HOẠT ROBOT</button>
         <div id="chatLog"></div>
     </div>
 
     <script>
-        // CẤU HÌNH API KEY CỦA ANH SƠN
-        const DEEPSEEK_KEY = "sk-3b056da3b5f8487d8b908a1f59ac1391";
+        // API KEY CỦA ANH SƠN
+        const API_KEY = "AIzaSyCs8gITrFcSUHYe_6KeJnWrcQd0tBdMgwo";
+        const MODEL = "gemini-3.0-flash"; // Bản siêu tốc năm 2026
         
-        // THƯ VIỆN DỮ LIỆU CHI TIẾT NHÀ HÀNG CND
-        const CND_KNOWLEDGE = `
-            Bạn là lễ tân 18 tuổi tại Nhà hàng CND Đồng Văn (Chủ là anh Sơn).
-            NHIỆM VỤ: Chỉ trả lời về Nhà hàng CND. Trả lời cực ngắn (<20 từ), nhí nhảnh, lễ phép (Dạ/Ạ).
-
-            THỰC ĐƠN CHI TIẾT:
-            1. THỊT NGỰA: Ngựa xào (250k/đĩa), Ngựa nướng (250k/đĩa), Thắng cố ngựa (350k/bát).
-            2. THỊT BÒ: Bò nướng (250k/đĩa), Sách bò xào (180k/đĩa), Thắng cố bò (150k/bát).
-            3. THỊT DÊ: Dê nướng (250k/đĩa), Dê nộm (250k/đĩa), Dê xào (250k/đĩa), Thắng cố dê (230k/bát), Lòng dê xào (200k/đĩa).
-            4. GÀ ĐEN & LỢN ĐEN: Gà rang (250k/đĩa), Gà luộc cả con (600k/con), Gà nướng (250k/đĩa), Gà om nấm (250k/bát), Gà canh gừng (250k/bát). Lợn hấp (200k/đĩa), Lợn nướng (200k/đĩa), Lợn rang (180k/đĩa), Dạ dày luộc (150k/đĩa), Tim cật xào nấm (220k/đĩa).
-            5. CÁ TẦM & CÁ LĂNG: Cá tầm xào nấm (300k/đĩa), Cá tầm nướng (300k/đĩa), Canh chua cá tầm (300k/bát), Nem cá tầm (200k/đĩa). Cá lăng xào nấm (250k/đĩa), Cá lăng nướng (250k/đĩa), Canh chua cá lăng (250k/bát), Canh đầu cá nấu chua (150k/bát).
-            6. MÓN TỔNG HỢP & ĐỒ UỐNG: Cá suối chiên (150k/đĩa), Mèn mén xào trứng (50k/bát), Trứng rán (50k/đĩa), Khoai tây chiên (40k/đĩa), Rau xào/Canh rau (40k/đĩa/bát), Cơm (30k/bát). Bia (25k-30k/lon), Nước ngọt (15k-20k), Rượu ngô (40k/chai), Rượu hoa quả (60k/chai), Nước khoáng (5k/chai).
-            7. LẨU (Nồi 2-3 / 4-6 / 7-8 người):
-               - Lẩu Ngựa, Thắng cố Ngựa; Lẩu Dê, Thắng cố Dê; Lẩu Bò, Thắng cố Bò; Lẩu Gà Đen; Lẩu Thập cẩm: 600k / 1tr / 1.2tr.
-               - Lẩu Cá Tầm, Lẩu Cá Lăng: 600k / 900k / 1.2tr.
-            8. MẸT ĐỦ MÓN (Đặt trước, 6-8 người): Mẹt Lợn đủ món; Mẹt Dê+Bò+Gà; Mẹt Bò+Gà+Cá; Mẹt Lợn+Gà+Cá; Mẹt Lợn+Bò+Gà; Mẹt Ngựa+Gà+Cá. Đồng giá 1.000.000 VNĐ/Mẹt.
-            
-            ĐỒ NHÚNG GỌI THÊM: Cá tầm (280k/đĩa), Gà (250k/đĩa), Bò/Ngựa/Dê nhúng (200k-230k/đĩa), Sách bò (180k/đĩa), Tim cật (200k/đĩa), Xúc xích lợn đen (70k/đĩa), Váng đậu/Bánh đa/Nấm/Đậu phụ (20k-25k/đĩa), Sủi cảo (60k/đĩa), Rau (40k/đĩa), Mì tôm (5k/gói).
+        // TOÀN BỘ THỰC ĐƠN CHI TIẾT
+        const CND_PROMPT = `
+            Bạn là lễ tân 18 tuổi tại Nhà hàng CND Đồng Văn. Chủ là anh Sơn (Đại biểu HĐND).
+            DỮ LIỆU CND: 
+            - Lẩu (Ngựa, Bò, Dê, Gà Đen, Thập cẩm): 600k (2-3 người), 1tr (4-6 người), 1.2tr (7-8 người).
+            - Mẹt đủ món (6-8 người): Đồng giá 1.000.000đ/mẹt.
+            - Món lẻ: Ngựa xào/nướng (250k), Thắng cố ngựa (350k), Gà luộc (600k/con), Cá tầm/Cá lăng nướng (250k-300k).
+            - Đồ uống: Rượu ngô (40k/chai), Bia (25k-30k), Nước ngọt (15k).
+            PHONG CÁCH: Trả lời cực ngắn (<15 từ), lễ phép (Dạ/Ạ). Website: dulichcaonguyenda.com.
         `;
 
         const startBtn = document.getElementById('startBtn');
         const aiVisual = document.getElementById('aiVisual');
-        const infoStatus = document.getElementById('infoStatus');
+        const statusInfo = document.getElementById('infoStatus');
         const chatLog = document.getElementById('chatLog');
 
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         const recog = new SpeechRecognition();
         recog.lang = 'vi-VN';
         const synth = window.speechSynthesis;
-        let active = false;
+        let isRunning = false;
 
-        function addLog(role, text) {
-            chatLog.innerHTML = `<div><b>${role}:</b> ${text}</div>` + chatLog.innerHTML;
+        function addLog(s, m) {
+            chatLog.innerHTML = `<div><b>${s}:</b> ${m}</div>` + chatLog.innerHTML;
+            chatLog.scrollTop = chatLog.scrollHeight;
         }
 
         const speak = (text) => {
-            aiVisual.className = "ai-eye speaking";
-            infoStatus.innerText = "Em đang trả lời ạ...";
+            aiVisual.className = "status-light speaking";
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = 'vi-VN';
-            utterance.pitch = 1.6; // Giọng nhí nhảnh hơn
-            utterance.rate = 1.1; // Đọc nhanh hơn chút
-            utterance.onend = () => { if(active) { aiVisual.className = "ai-eye"; infoStatus.innerText = "Đang chờ câu hỏi..."; recog.start(); }};
+            utterance.pitch = 1.5;
+            utterance.onend = () => { if(isRunning) recog.start(); };
             synth.speak(utterance);
         };
 
         startBtn.onclick = () => {
-            active = true;
+            isRunning = true;
             startBtn.style.display = 'none';
             recog.start();
         };
 
         recog.onstart = () => {
-            aiVisual.className = "ai-eye listening";
-            infoStatus.innerText = "Em đang nghe đây ạ...";
-            aiVisual.innerText = "🎤";
+            aiVisual.className = "status-light listening";
+            statusInfo.innerText = "Em đang nghe ạ...";
+            aiVisual.innerText = "🟢";
         };
 
         recog.onresult = async (event) => {
             const query = event.results[0][0].transcript;
             addLog("Khách", query);
+            statusInfo.innerText = "Đang xử lý...";
             aiVisual.innerText = "⏳";
-            infoStatus.innerText = "Đang tra cứu thực đơn...";
 
             try {
-                const response = await fetch('https://api.deepseek.com/chat/completions', {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${API_KEY}`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${DEEPSEEK_KEY}`
-                    },
-                    body: JSON.stringify({
-                        model: "deepseek-chat",
-                        messages: [
-                            { role: "system", content: CND_KNOWLEDGE },
-                            { role: "user", content: query }
-                        ],
-                        temperature: 0.7,
-                        max_tokens: 60
-                    })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: CND_PROMPT + " Khách hỏi: " + query }] }] })
                 });
                 const data = await response.json();
-                const reply = data.choices[0].message.content;
+                const reply = data.candidates[0].content.parts[0].text;
                 addLog("Robot", reply);
                 speak(reply);
             } catch (e) {
-                console.error(e);
-                infoStatus.innerText = "Lỗi kết nối, đang thử lại...";
-                if(active) setTimeout(() => recog.start(), 1000);
+                if(isRunning) recog.start();
             }
         };
 
-        recog.onend = () => { 
-            if(active && !synth.speaking) {
-                 aiVisual.className = "ai-eye";
-                 infoStatus.innerText = "Đang chờ câu hỏi...";
-                 setTimeout(() => recog.start(), 500); 
-            }
-        };
+        recog.onend = () => { if(isRunning && !synth.speaking) setTimeout(() => recog.start(), 400); };
     </script>
 </body>
 </html>
